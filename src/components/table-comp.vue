@@ -49,48 +49,16 @@
         style="width: 100%"
         max-height="100%"
         :fit="true"
+        @cell-mouse-enter="tableMouseEnter"
       >
-        <el-table-column prop="date" label="日期" min-width="150">
-        </el-table-column>
-        <el-table-column prop="name" label="姓名" min-width="120">
-        </el-table-column>
         <el-table-column
-          prop="age"
-          label="年龄"
-          min-width="120"
-          :formatter="
-            (row, col, value, index) => {
-              return value + '岁';
-            }
-          "
+          v-for="col of gaComp.tableColumns"
+          :key="col.name"
+          :prop="col.prop"
+          :label="col.label"
+          :min-width="col.minWidth"
+          :formatter="col.formatter ? col.formatter : void 0"
         >
-        </el-table-column>
-        <el-table-column
-          prop="hobby"
-          label="爱好"
-          min-width="120"
-          :formatter="
-            (row, col, value, index) => {
-              let rtn = '';
-              switch (value) {
-                case 0:
-                  rtn = '唱跳';
-                  break;
-                case 1:
-                  rtn = 'Rap';
-                  break;
-                case 2:
-                  rtn = '篮球';
-                  break;
-                default:
-                  void 0;
-              }
-              return rtn;
-            }
-          "
-        >
-        </el-table-column>
-        <el-table-column prop="address" label="地址" min-width="300">
         </el-table-column>
       </el-table>
     </el-main>
@@ -122,6 +90,53 @@ export default {
           },
         ],
         form: ["name", "hobby"],
+        tableColumns: [
+          {
+            prop: "date",
+            label: "日期",
+            minwidth: 150,
+          },
+          {
+            prop: "name",
+            label: "姓名",
+            minwidth: 120,
+          },
+          {
+            prop: "age",
+            label: "年龄",
+            minwidth: 120,
+            formatter: (row, col, value) => {
+              return value + "岁";
+            },
+          },
+          {
+            prop: "hobby",
+            label: "爱好",
+            minwidth: 120,
+            formatter: (row, col, value) => {
+              let rtn = "";
+              switch (value) {
+                case 0:
+                  rtn = "唱跳";
+                  break;
+                case 1:
+                  rtn = "Rap";
+                  break;
+                case 2:
+                  rtn = "篮球";
+                  break;
+                default:
+                  void 0;
+              }
+              return rtn;
+            },
+          },
+          {
+            prop: "address",
+            label: "地址",
+            minwidth: 300,
+          },
+        ],
       },
       options: [
         {
@@ -175,62 +190,117 @@ export default {
   created() {
     this.ga = new Ga(this.$router.currentRoute.fullPath);
 
-    console.log(
-      `%c获取导入、导出埋点值并进行重排...`,
-      `color:red;font-weight:700;`
-    );
-    this.gaComp.root = this.gaComp.root.sort((a, b) => {
-      const numA =
-        typeof this.ga.getAnchor(a.key) !== "object"
-          ? this.ga.getAnchor(a.key)
-          : 0;
+    if (this.$route.params && this.$route.params.type === "button") {
       console.log(
-        `获取${a.key}的埋点值，统计结果数为：%c${numA}`,
-        `color:green;`
+        `%c获取姓名、爱好埋点值并进行重排...`,
+        `color:red;font-weight:700;`
       );
-      const numB =
-        typeof this.ga.getAnchor(b.key) !== "object"
-          ? this.ga.getAnchor(b.key)
-          : 0;
       console.log(
-        `获取${b.key}的埋点值，统计结果数为：%c${numB}`,
-        `color:green;`
+        `姓名、爱好初始顺序为：`,
+        this.gaComp.form.map((item) => {
+          return item;
+        })
+      );
+      const gaForm = this.ga.getAnchor("form");
+      console.log(
+        `%c获取姓名、爱好的埋点顺序为：`,
+        `color:orange;font-weight:700;`,
+        this.ga.getAnchorSort("form")
       );
 
-      return numA - numB;
-    });
-    console.log(
-      `%c导入、导出埋点值排序结果为：`,
-      `color:red;font-weight:700;`,
-      this.gaComp.root
-    );
+      this.gaComp.form = this.gaComp.form
+        .sort((a, b) => {
+          return gaForm[b] || 0 - gaForm[a] || 0;
+        });
+      console.log(
+        `%c姓名、爱好埋点值进行重排结果为：`,
+        `color:green;font-weight:700;`,
+        this.gaComp.form.map((item) => {
+          return item;
+        })
+      );
 
-    console.log(`form初始顺序为：`, this.gaComp.form);
-    const gaForm = this.ga.getAnchorSort("form");
-    console.log(
-      `%c获取form的埋点顺序为：`,
-      `color:red;font-weight:700;`,
-      gaForm
-    );
+      console.log(
+        `\n%c获取导入、导出埋点值并进行重排...`,
+        `color:red;font-weight:700;`
+      );
+      console.log(
+        `导入、导出初始顺序为：`,
+        this.gaComp.root.map((item) => {
+          return item.key;
+        })
+      );
+      this.gaComp.root = this.gaComp.root.sort((a, b) => {
+        const numA =
+          typeof this.ga.getAnchor(a.key) !== "object"
+            ? this.ga.getAnchor(a.key)
+            : 0;
+        console.log(
+          `%c获取${a.key}的埋点值，统计结果数为：${numA}`,
+          `color:orange;`
+        );
+        const numB =
+          typeof this.ga.getAnchor(b.key) !== "object"
+            ? this.ga.getAnchor(b.key)
+            : 0;
+        console.log(
+          `%c获取${b.key}的埋点值，统计结果数为：${numB}`,
+          `color:orange;`
+        );
 
-    this.gaComp.form = this.gaComp.form
-      .sort((a, b) => {
-        return gaForm.indexOf(b) || 0 - gaForm.indexOf(a) || 0;
-      })
-      .reverse();
-    console.log(
-      `%cform埋点值进行重排结果为：`,
-      `color:red;font-weight:700;`,
-      this.gaComp.form
-    );
+        return numA - numB;
+      });
+      console.log(
+        `%c导入、导出埋点值排序结果为：`,
+        `color:green;font-weight:700;`,
+        this.gaComp.root.map((item) => {
+          return item.key;
+        })
+      );
+    } else if (this.$route.params && this.$route.params.type === "table") {
+      console.log(
+        `%c获取表格埋点值并进行重排...`,
+        `color:red;font-weight:700;`
+      );
+      console.log(
+        `表格初始顺序为：`,
+        this.gaComp.tableColumns.map((item) => {
+          return item.prop;
+        })
+      );
+      const gaTable = this.ga.getAnchor("table");
+      this.gaComp.tableColumns = this.gaComp.tableColumns.sort((a, b) => {
+        const numA = gaTable[a.prop] ? gaTable[a.prop] : 0;
+        const numB = gaTable[b.prop] ? gaTable[b.prop] : 0;
+
+        return numB - numA;
+      });
+      console.log(
+        `%c获取table的埋点顺序为：`,
+        `color:orange;font-weight:700;`,
+        this.ga.getAnchorSort("table")
+      );
+
+      console.log(
+        `%ctable埋点值进行重排结果为：`,
+        `color:green;font-weight:700;`,
+        this.gaComp.tableColumns.map((item) => {
+          return item.prop;
+        })
+      );
+    } else {
+      void 0;
+    }
   },
   methods: {
     search() {
-      const arr = [];
-      !!this.form.name && arr.push("form.name") && this.ga.add("form.name");
-      this.form.hobby !== "" &&
-        arr.push("form.hobby") &&
-        this.ga.add("form.hobby");
+      if (this.$route.params && this.$route.params.type === "button") {
+        const arr = [];
+        !!this.form.name && arr.push("form.name") && this.ga.add("form.name");
+        this.form.hobby !== "" &&
+          arr.push("form.hobby") &&
+          this.ga.add("form.hobby");
+      }
       this.tableDatas = this.tableData.filter((data) => {
         return (
           (!this.form.name ||
@@ -241,10 +311,20 @@ export default {
     },
     resetSearch() {},
     importFile() {
-      this.ga.add("importFile");
+      if (this.$route.params && this.$route.params.type === "button") {
+        this.ga.add("importFile");
+      }
     },
     exportFile() {
-      this.ga.add("exportFile");
+      if (this.$route.params && this.$route.params.type === "button") {
+        this.ga.add("exportFile");
+      }
+    },
+    tableMouseEnter(row, column) {
+      this.$router &&
+        this.$route.params &&
+        this.$route.params.type === "table" &&
+        this.ga.add(`table.${column.property}`);
     },
   },
 };
